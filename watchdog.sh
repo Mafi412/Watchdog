@@ -94,7 +94,7 @@ mailcont=null
 filecont=diff,time
 
 
-# Tady provádím práci s parametry
+# Work kith parameters
 while [ -n "$1" ]; do
         # adresa
         if [ $# -eq 1 ]; then
@@ -178,8 +178,10 @@ while [ -n "$1" ]; do
         if [ "$1" = "-f" ] || [ "$1" = "--file" ]; then
                 shift
 
-                if echo "$1" | grep "^/" > /dev/null 2> /dev/null \
-                || echo "$1" | grep "^~" > /dev/null 2> /dev/null; then
+                if echo "$1" | grep "^/" &> /dev/null \
+                || echo "$1" | grep "^~" &> /dev/null; then
+                        file="$1"
+                elif echo "$1" | grep "^null" &> /dev/null; then
                         file="$1"
                 else
                         file="~/$1"
@@ -208,7 +210,7 @@ while [ -n "$1" ]; do
         fi
 done
 
-adr_tti=$adr # adr_try to improve - pokus o vylepšení adresy do použitelného stavu
+adr_tti=$adr # adr_try to improve - try to improve the address to a usable state
 
 if [ "$(curl --compressed "$adr_tti" 2> /dev/null | wc -l)" -le 14 ]; then
         adr_tti=$adr/
@@ -234,24 +236,24 @@ fi
 
 Inicialize() {
 
-        cf1="watchdogcf$$"   # control file 1 - tady je uložená poslední podoba html souboru
-        cf2="/tmp/watchdogcf$$"   # control file 2 - sem stahuji aktuální verzi html
+        cf1="~/watchdogcf$$"   # control file 1 - here's saved last version of html file
+        cf2="/tmp/watchdogcf$$"   # control file 2 - here's downloaded actual version of html
 
         curl --compressed "$adr" 2> /dev/null > "$cf1"
 
         if [ $file = "uninicialized" ]; then
-                file=~/watchdog_"$adr"_changes
+                file="~/watchdog_""$adr""_changes"
         fi
 
 }
 
 Inicialize
 
-Compare() { # návratové hodnoty (return) - 0 - nebyl nalezen rozdíl; 1 - byla provedena změna
+Compare() { # return values - 0 - no difference found; 1 - change has been made
 
         curl --compressed "$adr" 2> /dev/null > "$cf2"
 
-        diff -q "$cf1" "$cf2" > /dev/null  2> /dev/null
+        diff -q "$cf1" "$cf2" &> /dev/null
         if [ $? -eq 0 ]; then
                 return 0
         else
@@ -261,8 +263,37 @@ Compare() { # návratové hodnoty (return) - 0 - nebyl nalezen rozdíl; 1 - byla
 }
 
 SendMail() {
+        
+        emailtext="/tmp/watchdogemail$$"
+        echo -n > "$emailtext"
+        
+        echo "Report from watchdog script: website $adr has been changed." > "$emailtext"
+        
+        if echo "$mailcont" | grep "time" &> /dev/null; then
+            echo > "$emailtext"
+            echo "Time of change detection: $(date --rfc-3339=seconds)" > "$emailtext"
+        fi
+        
+        if echo "$mailcont" | grep "diff" &> /dev/null; then
+            echo > "$emailtext"
+            echo > "$emailtext"
+            echo "Diff of the change:" > "$emailtext"
+            echo "(< - old; > - new)" > "$emailtext"
+            echo > "$emailtext"
+            diff "$cf1" "$cf2" > "$emailtext"
+        fi
+        
+        IFS="\n"
+        
+        i=1
+        n=$(echo "$mail" | wc -w)
+        while [ $i -le $n ]; do
+            mail -s "watchdog" $(echo "$mail" | cut -d ' ' -f $i ) < "$emailtext"
+            i=$((i+1))
+        done
 
-        echo "Sending mail to $mail."
+        IFS=" \t\n"
+        rm "$emailtext"
 
 }
 
@@ -270,7 +301,18 @@ SetFile() {
 
         echo -n > "$file"
         
-        echo "Seting file $file."
+        if echo "$filecont" | grep "time" &> /dev/null; then
+            echo > "$file"
+            echo "Time of change detection: $(date --rfc-3339=seconds)" > "$file"
+        fi
+        
+        if echo "$filecont" | grep "diff" &> /dev/null; then
+            echo > "$file"
+            echo "Diff of the change:" > "$file"
+            echo "(< - old; > - new)" > "$file"
+            echo > "$file"
+            diff "$cf1" "$cf2" > "$file"
+        fi
 
 }
 
@@ -280,7 +322,6 @@ while true; do
         Compare
 
         if [ $? -eq 1 ]; then
-                echo "No difference found."
                 continue
         else
                 if [ "$file" != "null" ]; then
