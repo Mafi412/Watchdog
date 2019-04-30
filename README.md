@@ -36,7 +36,7 @@ OPTIONS:
         time - the mail will contain time of detection of change
         default: just a short notification
         
-    -f (--file)"
+    -f (--file)
         path to file, where the informations about the change will be stored
         format: -f path
         where path is either absolute (starts with "/"), or relative path
