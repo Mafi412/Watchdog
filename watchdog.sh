@@ -24,7 +24,7 @@ help() {
         echo "        format: -t qu, where q is quantity and u is time unit"
         echo "        accepted units: "\'s\'" (seconds),"\
         \'m\'" (minutes),"\
-        \'h\'" (hours), "\'d\'" (days)"   
+        \'h\'" (hours), "\'d\'" (days)"
         echo "        (default unit: seconds)"
         echo "        default: 1h"
         echo        
@@ -32,7 +32,7 @@ help() {
         echo "        email address(es), which the notification will be sent on"
         echo "        format: -m mail1@domain1 ... mailN@domainN"
         echo "        where can be N mail addresses separated by space"
-        echo "        default: no mail will be send"  
+        echo "        default: no mail will be send"
         echo
         echo "    -mc (--mail-content)"
         echo "        determines, what the mail notification will contain"
@@ -47,9 +47,9 @@ help() {
         echo "        path to file, where the informations about the change will be stored"
         echo "        format: -f path"
         echo "        where path is either absolute (starts with \"/\"), or relative path"
-        echo "        (don't start with \"/\") to the file, where the report of change"
+        echo "        (doesn't start with \"/\") to the file, where the report of change"
         echo "        should be stored. The absolute way goes through unchanged,"
-        echo "        to the relative path is added \"\~\" on the beginning."             
+        echo "        to the relative path is added \"\~\" on the beginning."
         echo "        (so it's relative to the home directory of user starting the sript)"
         echo "        The whole path except the last part (the file itself) have to exist,"
         echo "        the file itself can (but don't have to) exist, but can not be a directory."
@@ -80,27 +80,27 @@ help() {
         # examples
         echo
         echo "EXAMPLES:"
-        echo "    watchdog -t 30m -m reciever1@mail.to www.address.domain"     
-        echo "        Watches address "\""www.address.domain"\"" every 30 minutes"
+        echo "    watchdog -t 30m -m reciever1@mail.to www.address.domain"
+        echo "        Watches address \"www.address.domain\" every 30 minutes"
         echo "        and in the case there will be any change it will send an email"
-        echo "        containing just a notification to address "\""reciever1@mail.to"\"
+        echo "        containing just a notification to address \"reciever1@mail.to\""
         echo "        and will save diff and time of change (respectively"
         echo "        the time of discovery of the change) to the file"
-        echo "        "\""~/watchdog_www.address.domain_changes"\""."
+        echo "        \"~/watchdog_www.address.domain_changes\"."
         echo
         echo "    watchdog -f path -m reciever1@mail.to reciever2@mail.to www.address.domain"
-        echo "        Watches address "\""www.address.domain"\"" every hour (default)"
+        echo "        Watches address \"www.address.domain\" every hour (default)"
         echo "        and in the case there will be any change it will send an email"
-        echo "        containing just a notification to both addresses "\""reciever1@mail.to"\"                                                                 
-        echo "        and "\""reciever2@mail.to"\"" and will safe diff and time of change"
+        echo "        containing just a notification to both addresses \"reciever1@mail.to\""
+        echo "        and \"reciever2@mail.to\" and will safe diff and time of change"
         echo "        (respectively the time of discovery of the change) to the file"
-        echo "        "\""path"\""."
+        echo "        \"path\"."
         echo
         echo "    watchdog -fc diff -mc diff,time -m reciever1@mail.to www.address.domain"
-        echo "        Watches address "\""www.address.domain"\"" every hour (default)"
-        echo "        and in the case there will be any change it will send an email"                                                                   
-        echo "        containing both diff and time of change to address "\""reciever1@mail.to"\"
-        echo "        and will safe diff to the file "\""~/watchdog_www.address.domain_changes"\""."
+        echo "        Watches address \"www.address.domain\" every hour (default)"
+        echo "        and in the case there will be any change it will send an email"
+        echo "        containing both diff and time of change to address \"reciever1@mail.to\""
+        echo "        and will safe diff to the file \"~/watchdog_www.address.domain_changes\"."
 
         # author
         echo
@@ -124,7 +124,7 @@ mailcont=null
 filecont=diff,time
 
 
-# Work kith parameters
+# Work with parameters
 while [ -n "$1" ]; do
         # address
         if [ $# -eq 1 ]; then
