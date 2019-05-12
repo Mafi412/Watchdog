@@ -111,6 +111,92 @@ help() {
         exit ${1:-1}
 }
 
+################################################################################
+# functions
+
+Inicialize() {
+
+        cf1=~/watchdogcf$$   # control file 1 - here's saved last version of text of the file
+        cf2=/tmp/watchdogcf$$   # control file 2 - here's downloaded actual version of text of the file
+
+        w3m -dump "$adr" 2> /dev/null > "$cf1"
+
+        if [ $file = "uninicialized" ]; then
+                editedAddress=$(echo "$adr" | sed 's#^[^/]*//##' | sed 's#\([^/]*\.[^/]*\)/.*#\1#')
+                file=~/watchdog_"$editedAddress"_changes
+        fi
+
+}
+
+Compare() { # return values - 0 - no difference found; 1 - change has been made
+
+        w3m -dump "$adr" > "$cf2"
+
+        if diff -q "$cf1" "$cf2" &> /dev/null; then
+                return 0
+        else
+                return 1
+        fi
+
+}
+
+SendMail() {
+
+        emailtext="/tmp/watchdogemail$$"
+        echo -n > "$emailtext"
+
+        echo "Report from watchdog script: website $adr has been changed." >> "$emailtext"
+
+        if echo "$mailcont" | grep "time" &> /dev/null; then
+            echo >> "$emailtext"
+            echo "Time of change detection: $(date --rfc-3339=seconds)" >> "$emailtext"
+        fi
+
+        if echo "$mailcont" | grep "diff" &> /dev/null; then
+            echo >> "$emailtext"
+            echo >> "$emailtext"
+            echo "Diff of the change:" >> "$emailtext"
+            echo "(< - old; > - new)" >> "$emailtext"
+            echo >> "$emailtext"
+            diff "$cf1" "$cf2" >> "$emailtext"
+        fi
+
+        oldIFS="$IFS"
+        IFS="
+        "
+
+        i=1
+        n=$(echo "$mail" | wc -w)
+        while [ $i -le $n ]; do
+            mail -s "watchdog" $(echo "$mail" | cut -d ' ' -f $i ) < "$emailtext"
+            i=$((i+1))
+        done
+
+        IFS="$oldIFS"
+
+}
+
+SetFile() {
+
+        echo -n > "$file"
+
+        if echo "$filecont" | grep "time" &> /dev/null; then
+            echo >> "$file"
+            echo "Time of change detection: $(date --rfc-3339=seconds)" >> "$file"
+        fi
+
+        if echo "$filecont" | grep "diff" &> /dev/null; then
+            echo >> "$file"
+            echo "Diff of the change:" >> "$file"
+            echo '(< - old; > - new)' >> "$file"
+            echo >> "$file"
+            diff "$cf1" "$cf2" >> "$file"
+        fi
+
+}
+
+################################################################################
+
 if [ $# -eq 0 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         echo
         help
@@ -124,7 +210,9 @@ mailcont=null
 filecont=diff,time
 
 
-# Work with parameters
+################################################################################
+# Loading parameters
+
 while [ -n "$1" ]; do
         # address
         if [ $# -eq 1 ]; then
@@ -254,7 +342,10 @@ while [ -n "$1" ]; do
         fi
 done
 
-adr_tti=$adr # adr_try to improve - try to improve the address to a usable state
+################################################################################
+# adr_try to improve - trying to improve the address to a usable state
+
+adr_tti=$adr
 
 if [ "$(curl --compressed "$adr_tti" 2> /dev/null | wc -l)" -le 14 ]; then
         adr_tti=$adr/
@@ -277,87 +368,8 @@ else
         exit 2
 fi
 
-
-Inicialize() {
-
-        cf1=~/watchdogcf$$   # control file 1 - here's saved last version of text of the file
-        cf2=/tmp/watchdogcf$$   # control file 2 - here's downloaded actual version of text of the file
-
-        w3m -dump "$adr" 2> /dev/null > "$cf1"
-
-        if [ $file = "uninicialized" ]; then
-                editedAddress=$(echo "$adr" | sed 's#^[^/]*//##' | sed 's#\([^/]*\.[^/]*\)/.*#\1#')
-                file=~/watchdog_"$editedAddress"_changes
-        fi
-
-}
-
-Compare() { # return values - 0 - no difference found; 1 - change has been made
-
-        w3m -dump "$adr" > "$cf2"
-
-        if diff -q "$cf1" "$cf2" &> /dev/null; then
-                return 0
-        else
-                return 1
-        fi
-
-}
-
-SendMail() {
-
-        emailtext="/tmp/watchdogemail$$"
-        echo -n > "$emailtext"
-
-        echo "Report from watchdog script: website $adr has been changed." >> "$emailtext"
-
-        if echo "$mailcont" | grep "time" &> /dev/null; then
-            echo >> "$emailtext"
-            echo "Time of change detection: $(date --rfc-3339=seconds)" >> "$emailtext"
-        fi
-
-        if echo "$mailcont" | grep "diff" &> /dev/null; then
-            echo >> "$emailtext"
-            echo >> "$emailtext"
-            echo "Diff of the change:" >> "$emailtext"
-            echo "(< - old; > - new)" >> "$emailtext"
-            echo >> "$emailtext"
-            diff "$cf1" "$cf2" >> "$emailtext"
-        fi
-
-        oldIFS="$IFS"
-        IFS="
-        "
-
-        i=1
-        n=$(echo "$mail" | wc -w)
-        while [ $i -le $n ]; do
-            mail -s "watchdog" $(echo "$mail" | cut -d ' ' -f $i ) < "$emailtext"
-            i=$((i+1))
-        done
-
-        IFS="$oldIFS"
-
-}
-
-SetFile() {
-
-        echo -n > "$file"
-
-        if echo "$filecont" | grep "time" &> /dev/null; then
-            echo >> "$file"
-            echo "Time of change detection: $(date --rfc-3339=seconds)" >> "$file"
-        fi
-
-        if echo "$filecont" | grep "diff" &> /dev/null; then
-            echo >> "$file"
-            echo "Diff of the change:" >> "$file"
-            echo '(< - old; > - new)' >> "$file"
-            echo >> "$file"
-            diff "$cf1" "$cf2" >> "$file"
-        fi
-
-}
+################################################################################
+# main logic of the script
 
 Inicialize
 
